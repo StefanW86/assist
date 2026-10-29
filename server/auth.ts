@@ -70,9 +70,9 @@ export function authRoutes(config: Config, now: () => number): Hono {
   return app;
 }
 
-export function requireAuth(config: Config, now: () => number = Date.now): MiddlewareHandler {
+export function requireAuth(config: Config, now: () => number = Date.now, exempt: string[] = []): MiddlewareHandler {
   return async (c, next) => {
-    if (!(await validSession(c, config, now))) return c.body(null, 401);
+    if (!exempt.includes(c.req.path) && !(await validSession(c, config, now))) return c.body(null, 401);
     await next();
   };
 }

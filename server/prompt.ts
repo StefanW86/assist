@@ -44,7 +44,7 @@ const entityIdParam = { type: "string", description: "Genau eine entity_id, z. B
 export const HA_TOOL_DEFS = [
   {
     type: "function",
-    strict: false, // data is a free-form object, invalid under strict schemas
+    strict: false,
     name: "ha_search",
     description: "Sucht Home-Assistant-Entitäten per Freitext (Name, Raum, Gerätetyp). Liefert eine Liste von Entitäten mit entity_id, Name, Domain, Zustand und Bereich.",
     parameters: {
@@ -56,7 +56,7 @@ export const HA_TOOL_DEFS = [
   },
   {
     type: "function",
-    strict: false, // data is a free-form object, invalid under strict schemas
+    strict: false,
     name: "ha_get_state",
     description: "Liest den aktuellen Zustand und die Attribute genau einer Entität.",
     parameters: {
@@ -88,7 +88,7 @@ export const HA_TOOL_DEFS = [
   },
   {
     type: "function",
-    strict: false, // data is a free-form object, invalid under strict schemas
+    strict: false,
     name: "confirm_action",
     description: "Führt eine bestätigungspflichtige Aktion aus. Nur aufrufen, nachdem der Nutzer frisch und eindeutig 'ja' gesagt hat.",
     parameters: {

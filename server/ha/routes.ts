@@ -9,6 +9,8 @@ type EntityRecord = { entity_id: string; state?: unknown; attributes?: { device_
 // Keys that would retarget a service call away from the checked entity_id.
 const TARGET_KEYS = ["entity_id", "device_id", "area_id", "floor_id", "label_id", "target", "entities"];
 
+const HA_GENERIC_SERVICES = ["turn_on", "turn_off", "toggle"];
+
 const fail = (msg: string): never => {
   throw new Error(msg);
 };
@@ -59,6 +61,8 @@ export function haRoutes(ha: HaClient, config: Config, store: ConfirmationStore)
       if (data !== undefined && (data === null || typeof data !== "object" || Array.isArray(data))) fail("invalid_data");
       if (data && TARGET_KEYS.some((k) => k in (data as object))) fail("targeting_in_data_not_allowed");
       // e.g. script.open_door with a harmless light as entity_id would bypass the guard
+      // homeassistant.stop/restart and update.install would hit the whole system, not the entity
+      if (domain === "update" || (domain === "homeassistant" && !HA_GENERIC_SERVICES.includes(service))) fail("service_not_allowed");
       if (domain !== entity_id.split(".")[0] && domain !== "homeassistant") fail("domain_mismatch");
 
       const rec = await getState(entity_id);

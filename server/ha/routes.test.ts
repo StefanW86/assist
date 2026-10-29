@@ -184,6 +184,32 @@ describe("HA tool endpoints", () => {
     expect(s.services().length).toBe(1);
   });
 
+  it("homeassistant.* nur turn_on/turn_off/toggle, update.* nie", async () => {
+    const s = await setup();
+    for (const [domain, service, entity_id] of [
+      ["homeassistant", "stop", "light.wohnzimmer"],
+      ["homeassistant", "restart", "light.wohnzimmer"],
+      ["update", "install", "update.ha_core"],
+    ]) {
+      expect(await s.tool("ha_call_service", { domain, service, entity_id })).toEqual({ error: "service_not_allowed" });
+    }
+    expect(s.calls).toEqual([]);
+    expect((await s.tool("ha_call_service", { domain: "homeassistant", service: "turn_on", entity_id: "light.wohnzimmer" })).status).toBe("done");
+  });
+
+  it("zu grosser Body -> 413, auch beim Login", async () => {
+    const s = await setup();
+    const big = "x".repeat(70 * 1024);
+    expect((await s.post("/api/login", { password: big }, false)).status).toBe(413);
+    expect((await s.post("/api/tools/ha_search", { query: big })).status).toBe(413);
+    expect(s.calls).toEqual([]);
+  });
+
+  it("neue /api-Routen sind ohne Cookie gesperrt", async () => {
+    const s = await setup();
+    expect((await s.post("/api/irgendwas", {}, false)).status).toBe(401);
+  });
+
   it("unbekannter Zustand -> Fehler, kein Service-Aufruf", async () => {
     const s = await setup();
     const r = await s.tool("ha_call_service", { domain: "light", service: "turn_on", entity_id: "light.gibtsnicht" });

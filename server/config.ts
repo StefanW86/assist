@@ -19,6 +19,7 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
     if (!v) throw new Error(`Umgebungsvariable ${name} fehlt`);
     return v;
   };
+  if (req("SESSION_SECRET").length < 32) throw new Error("SESSION_SECRET muss mindestens 32 Zeichen lang sein");
   const allow = list(env.HA_ENTITY_ALLOWLIST);
   return {
     openaiApiKey: req("OPENAI_API_KEY"),

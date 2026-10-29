@@ -4,7 +4,7 @@ import { loadConfig } from "./config.ts";
 const base = {
   OPENAI_API_KEY: "k",
   APP_PASSWORD: "p",
-  SESSION_SECRET: "s",
+  SESSION_SECRET: "s".repeat(32),
   HA_MCP_URL: "http://ha/mcp",
 };
 
@@ -16,6 +16,10 @@ describe("loadConfig", () => {
       expect(() => loadConfig(env)).toThrow(name);
     });
   }
+
+  it("SESSION_SECRET braucht mindestens 32 Zeichen", () => {
+    expect(() => loadConfig({ ...base, SESSION_SECRET: "s".repeat(31) })).toThrow("SESSION_SECRET");
+  });
 
   it("setzt Defaults", () => {
     const c = loadConfig(base);
