@@ -38,6 +38,10 @@ describe("postJson", () => {
     stub(200, { a: 1 });
     expect(await postJson("/api/x", { b: 2 })).toEqual({ a: 1 });
   });
+  it("returns undefined on 204 without body", async () => {
+    stub(204);
+    expect(await postJson("/api/x", {})).toBeUndefined();
+  });
   it("throws on other errors", async () => {
     stub(500);
     await expect(postJson("/api/x", {})).rejects.toThrow("500");

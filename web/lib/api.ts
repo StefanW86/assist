@@ -28,5 +28,6 @@ export async function postJson<T>(path: string, body: unknown): Promise<T> {
   const res = await call(path, "POST", body);
   if (res.status === 401) throw new UnauthorizedError();
   if (!res.ok) throw new Error(`Anfrage fehlgeschlagen (${res.status})`);
+  if (res.status === 204) return undefined as T; // z. B. /api/transcript: kein Body, res.json() wuerde werfen
   return (await res.json()) as T;
 }
