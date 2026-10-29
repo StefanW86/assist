@@ -46,6 +46,12 @@ docker image inspect $(docker compose images -q assist)   # keine Secrets in Env
 
 `.env` wird nicht ins Image kopiert, sondern nur zur Laufzeit übergeben.
 
+### Automatisches Deployment
+
+`.github/workflows/deploy.yml` läuft bei jedem Push auf `main` (oder manuell) auf einem self-hosted Runner mit Label `assist` auf dem Server: `git reset --hard` auf den gepushten Commit in `/home/stefan/assist`, `docker compose up --build -d`, Healthcheck auf Port 8080, alte Images aufräumen. Die `.env` bleibt dabei unangetastet.
+
+Das Repo ist öffentlich und der Runner läuft im Heimnetz: Unter *Settings → Actions → General* „Require approval for all external contributors“ einstellen, damit Workflows aus Fork-PRs nie ungefragt auf dem Server laufen.
+
 ## Cloudflare Tunnel
 
 Tunnel auf `http://<host>:8080` zeigen lassen.

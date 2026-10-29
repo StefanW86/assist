@@ -1,0 +1,48 @@
+name: Deploy
+
+# Only main pushes and manual runs: a pull_request trigger would let fork code run on the home server.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, assist]
+    env:
+      APP_DIR: /home/stefan/assist
+    defaults:
+      run:
+        working-directory: /home/stefan/assist
+    steps:
+      - name: Repo aktualisieren
+        # .env is gitignored, so reset --hard leaves it alone.
+        run: |
+          git fetch --prune origin
+          git checkout --quiet main
+          git reset --hard "$GITHUB_SHA"
+
+      - name: Container bauen und starten
+        run: docker compose up --build -d --remove-orphans
+
+      - name: Healthcheck
+        run: |
+          for i in $(seq 1 30); do
+            if [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/)" = 200 ]; then
+              echo "App antwortet auf Port 8080"
+              exit 0
+            fi
+            sleep 2
+          done
+          docker compose logs --tail 50
+          exit 1
+
+      - name: Alte Images aufräumen
+        run: docker image prune -f
