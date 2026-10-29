@@ -24,17 +24,25 @@ export function needsConfirmation(
   );
 }
 
-const NEGATIVE = ["nein", "nicht", "kein", "stopp", "warte", "doch nicht", "abbrechen"];
+// "doch nicht" is covered by "nicht".
+const NEGATIVE = [
+  "nein", "nee", "nö", "no", "nicht", "nie", "niemals", "kein", "keine", "keinen",
+  "stopp", "stop", "warte", "halt", "moment", "vergiss", "lass", "abbrechen",
+];
+// STT often drops "?", so a leading question word also rejects.
+const QUESTION_START = ["ist", "soll", "sollst", "darf", "warum", "wieso", "was", "wer", "wie", "kannst", "bist"];
 const POSITIVE = ["ja", "jawohl", "okay", "ok", "bestätigt", "bestätige", "mach", "los", "genau"];
 
+// shortcut: "mach zu" also counts as consent; upgrade = match consent against the pending action.
 // Whole-word / whole-phrase match on normalized text.
 function hasWord(padded: string, words: string[]): boolean {
   return words.some((w) => padded.includes(` ${w} `));
 }
 
 export function isAffirmative(text: string): boolean {
-  if (text.trim().endsWith("?")) return false;
+  if (text.includes("?")) return false;
   const padded = ` ${text.toLowerCase().replace(/[^\p{L}\p{N}]+/gu, " ").trim()} `;
+  if (QUESTION_START.includes(padded.trim().split(" ")[0])) return false;
   return !hasWord(padded, NEGATIVE) && hasWord(padded, POSITIVE);
 }
 

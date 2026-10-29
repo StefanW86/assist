@@ -20,7 +20,7 @@ describe("isAffirmative", () => {
   it.each(["Ja", "ja bitte", "Ja, mach das", "bestätigt", "mach auf", "okay"])("accepts %j", (t) => {
     expect(isAffirmative(t)).toBe(true);
   });
-  it.each(["nein", "ja, nein doch nicht", "nicht aufschließen", "warte", "", "ja?", "nichts", "jaja nein"])(
+  it.each(["nein", "ja, nein doch nicht", "nicht aufschließen", "warte", "", "ja?", "nichts", "jaja nein", "Ja? Okay", "Ist das okay? ja", "ist das okay", "ja stop", "nee ok", "nö okay", "soll ich das machen", "Ja?!"])(
     "rejects %j",
     (t) => {
       expect(isAffirmative(t)).toBe(false);
