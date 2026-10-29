@@ -45,9 +45,10 @@ export function VoiceScreen({ onUnauthorized }: { onUnauthorized: () => void }) 
     // iOS: AudioContext nur innerhalb der Klick-Geste anlegen, also vor dem ersten await
     cleanup();
     // iOS knackt durchgehend, wenn der Kontext nicht mit WebRTC (48 kHz) laeuft oder mit kleinen Puffern unterlaeuft
-    const audio = new AudioContext({ sampleRate: 48_000, latencyHint: "playback" });
-    audioCtx.current = audio;
-    void audio.resume();
+    // shortcut: ?nowave schaltet Web Audio ab, um das iOS-Knacken einzugrenzen; nach der Diagnose entfernen
+    const audio = new URLSearchParams(location.search).has("nowave") ? undefined : new AudioContext({ sampleRate: 48_000, latencyHint: "playback" });
+    audioCtx.current = audio ?? null;
+    void audio?.resume();
     setError("");
     setUser("");
     setAssistant("");

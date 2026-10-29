@@ -98,6 +98,7 @@ export function haRoutes(ha: HaClient, config: Config, store: ConfirmationStore)
     try {
       return c.json((await tool(args)) as object);
     } catch (e) {
+      console.error(`tool ${c.req.param("name")} failed:`, e instanceof Error ? (e.cause ?? e.message) : e);
       return c.json({ error: e instanceof Error ? e.message : String(e) });
     }
   });
