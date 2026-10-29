@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from "react";
 import { MicButton } from "@/components/MicButton";
 import { Subtitles } from "@/components/Subtitles";
 import { Waveform } from "@/components/Waveform";
-import { UnauthorizedError } from "@/lib/api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { postJson, UnauthorizedError } from "@/lib/api";
 import { connectLive } from "@/lib/live";
 import { acquire, release } from "@/lib/wakeLock";
 
@@ -20,6 +22,7 @@ export function VoiceScreen({ onUnauthorized }: { onUnauthorized: () => void }) 
   const [user, setUser] = useState("");
   const [assistant, setAssistant] = useState("");
   const [error, setError] = useState("");
+  const [number, setNumber] = useState("");
 
   const session = useRef(0);
   const cleanup = () => {
@@ -113,6 +116,24 @@ export function VoiceScreen({ onUnauthorized }: { onUnauthorized: () => void }) 
       <p role="alert" className="min-h-10 px-6 pb-3 text-center text-sm text-destructive">
         {error}
       </p>
+      <form
+        className="mx-auto mb-4 flex w-full max-w-sm gap-2 px-6"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          setError("");
+          try {
+            await postJson("/api/call", { number: number.trim() });
+          } catch (err) {
+            if (err instanceof UnauthorizedError) onUnauthorized();
+            else setError("Anruf fehlgeschlagen – Nummer im Format +49… prüfen");
+          }
+        }}
+      >
+        <Input type="tel" inputMode="tel" placeholder="+491701234567" value={number} onChange={(e) => setNumber(e.target.value)} />
+        <Button type="submit" disabled={!/^\+[1-9]\d{6,14}$/.test(number.trim())}>
+          Anrufen
+        </Button>
+      </form>
       <div className="flex justify-center">
         <MicButton active={active} busy={status === "connecting"} onClick={toggle} />
       </div>

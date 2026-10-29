@@ -6,6 +6,7 @@ import type { HaClient } from "./ha/client.ts";
 import { ConfirmationStore } from "./ha/guard.ts";
 import { haRoutes } from "./ha/routes.ts";
 import { buildSessionConfig, type LiveClient } from "./live.ts";
+import { callRoutes } from "./phone.ts";
 
 export type AppDeps = { config: Config; live: LiveClient; ha: HaClient; now?: () => number };
 
@@ -27,6 +28,7 @@ export function createApp(deps: AppDeps): Hono {
       return c.json({ error: "live_session_failed" }, 502);
     }
   });
+  app.route("/", callRoutes(deps.config));
   app.route("/api", haRoutes(deps.ha, deps.config, new ConfirmationStore(now)));
   return app;
 }

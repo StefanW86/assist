@@ -7,6 +7,7 @@ export type Config = {
   haConfirmEntities: string[];
   haEntityAllowlist: string[] | null;
   liveBackendModel: string;
+  phone?: { twilioSid: string; twilioToken: string; twilioFrom: string; openaiProjectId: string; webhookSecret: string };
   port: number;
 };
 
@@ -30,6 +31,10 @@ export function loadConfig(env: Record<string, string | undefined>): Config {
     haConfirmEntities: list(env.HA_CONFIRM_ENTITIES),
     haEntityAllowlist: allow.length ? allow : null,
     liveBackendModel: env.LIVE_BACKEND_MODEL || "gpt-6-luna",
+    // Telefonie nur, wenn alles gesetzt ist; sonst antwortet /api/call mit 501
+    phone: env.TWILIO_ACCOUNT_SID && env.TWILIO_AUTH_TOKEN && env.TWILIO_FROM && env.OPENAI_PROJECT_ID && env.OPENAI_WEBHOOK_SECRET
+      ? { twilioSid: env.TWILIO_ACCOUNT_SID, twilioToken: env.TWILIO_AUTH_TOKEN, twilioFrom: env.TWILIO_FROM, openaiProjectId: env.OPENAI_PROJECT_ID, webhookSecret: env.OPENAI_WEBHOOK_SECRET }
+      : undefined,
     port: env.PORT ? Number(env.PORT) : 8080,
   };
 }
