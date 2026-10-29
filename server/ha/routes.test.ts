@@ -141,6 +141,8 @@ describe("HA tool endpoints", () => {
       query: "licht",
       limit: 20,
       result_fields: ["entity_id", "friendly_name", "domain", "state", "area"],
+      fields: ["entities"],
+      config_time_budget: 0.001,
     });
   });
 

@@ -47,7 +47,10 @@ export function haRoutes(ha: HaClient, config: Config, store: ConfirmationStore)
         query: str(args.query, "query"),
         limit: 20,
         result_fields: ["entity_id", "friendly_name", "domain", "state", "area"],
-      })) as { entities?: { entity_id: string }[] } | null;
+        fields: ["entities"],
+        // ha-mcp durchsucht sonst auch alle Automations-/Skript-Konfigurationen (seriell, >15 s); wir brauchen nur Entitaeten
+        config_time_budget: 0.001,
+      }))as { entities?: { entity_id: string }[] } | null;
       return (res?.entities ?? []).filter((e) => allowed(e.entity_id));
     },
 
