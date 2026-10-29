@@ -17,9 +17,9 @@ npm run dev:web        # Vite-Dev-Server
 |---|---|
 | `OPENAI_API_KEY` | OpenAI-API-Key (nur Server) |
 | `APP_PASSWORD` | Passwort für den Login |
-| `SESSION_SECRET` | Langer Zufallsstring zum Signieren des Session-Cookies |
-| `HA_MCP_URL` | URL des ha-mcp-Servers (HTTP-Modus, siehe unten) |
-| `HA_TOKEN` | Long-Lived Access Token von Home Assistant (optional) |
+| `SESSION_SECRET` | Zufallsstring (mind. 32 Zeichen, z. B. `openssl rand -hex 32`) zum Signieren des Session-Cookies |
+| `HA_MCP_URL` | URL des ha-mcp-Servers (Streamable HTTP mit geheimem Pfad, z. B. `http://192.168.1.10:8086/<geheimer-pfad>`, siehe unten) |
+| `HA_TOKEN` | Optionaler Bearer-Token für ha-mcp selbst (den Home-Assistant-Token hält ha-mcp) |
 | `HA_CONFIRM_ENTITIES` | Kommaseparierte Entitäten, die immer Bestätigung brauchen |
 | `HA_ENTITY_ALLOWLIST` | Kommaseparierte steuerbare Entitäten (leer = alle) |
 | `LIVE_BACKEND_MODEL` | Backend-Modell für Delegation (Default `gpt-6-luna`) |
@@ -27,11 +27,11 @@ npm run dev:web        # Vite-Dev-Server
 
 ## ha-mcp
 
-`ghcr.io/homeassistant-ai/ha-mcp` im HTTP-Modus starten und `HA_MCP_URL` auf dessen geheime URL setzen (Details im ha-mcp-Repository).
+`ghcr.io/homeassistant-ai/ha-mcp` im HTTP-Modus (Streamable HTTP) starten und `HA_MCP_URL` auf dessen geheime URL setzen, z. B. `http://192.168.1.10:8086/<geheimer-pfad>`. Der Home-Assistant-Token wird in ha-mcp konfiguriert, nicht in dieser App (Details im ha-mcp-Repository).
 
 ## Bestätigungsregeln
 
-Immer mit Bestätigung (Ablauf nach 60 s): Schlösser (`lock`), Alarmanlage (`alarm_control_panel`), Garagen-/Tor-Covers (`device_class` `garage` oder `gate`). HA-Skripte, -Szenen oder -Automationen, die indirekt etwas entriegeln, müssen in `HA_CONFIRM_ENTITIES` eingetragen werden.
+Immer mit Bestätigung (Ablauf nach 60 s): Schlösser (`lock`), Alarmanlage (`alarm_control_panel`), Garagen-/Tor-Covers (`device_class` `garage` oder `gate`). HA-Skripte, -Szenen oder -Automationen, die indirekt etwas entriegeln, müssen in `HA_CONFIRM_ENTITIES` eingetragen werden – ebenso `button.*`-, `switch.*`- oder `input_boolean.*`-Entitäten, die Türen oder Summer öffnen (z. B. Türöffner einer Gegensprechanlage).
 
 ## Docker (Linux-Host)
 

@@ -1,6 +1,7 @@
 services:
   assist:
     build: .
+    init: true
     env_file: .env
     ports:
       - "8080:8080"
