@@ -1,0 +1,34 @@
+export type Config = {
+  openaiApiKey: string;
+  appPassword: string;
+  sessionSecret: string;
+  haMcpUrl: string;
+  haToken?: string;
+  haConfirmEntities: string[];
+  haEntityAllowlist: string[] | null;
+  liveBackendModel: string;
+  port: number;
+};
+
+const list = (v: string | undefined): string[] =>
+  (v ?? "").split(",").map((s) => s.trim()).filter(Boolean);
+
+export function loadConfig(env: Record<string, string | undefined>): Config {
+  const req = (name: string): string => {
+    const v = env[name];
+    if (!v) throw new Error(`Umgebungsvariable ${name} fehlt`);
+    return v;
+  };
+  const allow = list(env.HA_ENTITY_ALLOWLIST);
+  return {
+    openaiApiKey: req("OPENAI_API_KEY"),
+    appPassword: req("APP_PASSWORD"),
+    sessionSecret: req("SESSION_SECRET"),
+    haMcpUrl: req("HA_MCP_URL"),
+    haToken: env.HA_TOKEN || undefined,
+    haConfirmEntities: list(env.HA_CONFIRM_ENTITIES),
+    haEntityAllowlist: allow.length ? allow : null,
+    liveBackendModel: env.LIVE_BACKEND_MODEL || "gpt-6-luna",
+    port: env.PORT ? Number(env.PORT) : 8080,
+  };
+}
