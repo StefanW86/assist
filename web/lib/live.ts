@@ -56,7 +56,7 @@ export async function connectLive(ev: LiveEvents): Promise<{ close(): void; micS
     for (const track of mic.getTracks()) pc.addTrack(track, mic);
     pc.ontrack = (e) => e.streams[0]?.getTracks().forEach((t) => remoteStream.addTrack(t));
     pc.onconnectionstatechange = () => {
-      if (pc.connectionState === "failed") ev.onError("Verbindung verloren");
+      if (pc.connectionState === "failed") ev.onError("Verbindung getrennt");
       if (pc.connectionState === "failed" || pc.connectionState === "closed") teardown();
     };
     const dc = pc.createDataChannel(DATA_CHANNEL);
