@@ -26,6 +26,11 @@ describe("isAffirmative", () => {
       expect(isAffirmative(t)).toBe(false);
     },
   );
+  it("only short utterances count (max 4 words)", () => {
+    expect(isAffirmative("Mach lieber das Licht im Flur an")).toBe(false);
+    expect(isAffirmative("ja mach das bitte")).toBe(true);
+    expect(isAffirmative("ja mach das bitte jetzt")).toBe(false);
+  });
   it("matches whole words only", () => {
     expect(isAffirmative("jahr")).toBe(false);
     expect(isAffirmative("losgehts")).toBe(false);
@@ -50,8 +55,9 @@ describe("ConfirmationStore", () => {
     expect(store.take(store.create(action))).toEqual({ error: "not_confirmed" });
   });
   it("returns the action once", () => {
-    const { store } = setup();
+    const { store, advance } = setup();
     const id = store.create(action);
+    advance(1500);
     store.addUtterance("ja");
     expect(store.take(id)).toEqual(action);
     expect(store.take(id)).toEqual({ error: "unknown" });
@@ -69,6 +75,34 @@ describe("ConfirmationStore", () => {
     store.addUtterance("ja");
     store.addUtterance("nein");
     expect(store.take(id)).toEqual({ error: "not_confirmed" });
+  });
+  it("consent must come >= 1500 ms after create", () => {
+    const { store, advance } = setup();
+    const id = store.create(action);
+    advance(1000);
+    store.addUtterance("ja");
+    expect(store.take(id)).toEqual({ error: "not_confirmed" });
+    advance(600);
+    store.addUtterance("ja");
+    expect(store.take(id)).toEqual(action);
+  });
+  it("a 'nein' rejects all pending actions, a later 'ja' does not confirm them", () => {
+    const { store, advance } = setup();
+    const id = store.create(action);
+    advance(2000);
+    store.addUtterance("nein");
+    store.addUtterance("ja");
+    expect(store.take(id)).toEqual({ error: "not_confirmed" });
+    expect(store.take(id)).toEqual({ error: "unknown" });
+  });
+  it("a successful take clears the other pending actions", () => {
+    const { store, advance } = setup();
+    const a = store.create(action);
+    const b = store.create({ ...action, entity_id: "lock.keller" });
+    advance(2000);
+    store.addUtterance("ja");
+    expect(store.take(a)).toEqual(action);
+    expect(store.take(b)).toEqual({ error: "unknown" });
   });
   it("unknown id", () => {
     expect(setup().store.take("x")).toEqual({ error: "unknown" });

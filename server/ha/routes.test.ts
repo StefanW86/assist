@@ -98,6 +98,7 @@ describe("HA tool endpoints", () => {
     expect(r.description).toContain("Haustür");
     expect(s.services()).toEqual([]);
 
+    s.advance(1500);
     expect((await s.post("/api/transcript", { text: "Ja" })).status).toBe(204);
     expect(await s.tool("confirm_action", { action_id: r.action_id })).toEqual({ status: "done" });
     expect(s.services()).toEqual([
