@@ -7,7 +7,7 @@ RUN npm run build && npm prune --omit=dev
 
 FROM ubuntu:24.04 AS runtime
 RUN apt-get update \
- && apt-get install -y --no-install-recommends ca-certificates \
+ && apt-get install -y --no-install-recommends ca-certificates libatomic1 \
  && rm -rf /var/lib/apt/lists/* \
  && useradd --system --no-create-home --uid 10001 app
 COPY --from=build /usr/local/bin/node /usr/local/bin/node
