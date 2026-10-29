@@ -17,6 +17,6 @@ const app = createApp({
 
 // Static frontend from dist/ (relative to cwd); SPA fallback for every non-API GET.
 app.use("*", serveStatic({ root: "./dist" }));
-app.get("*", (c, next) => (c.req.path.startsWith("/api") ? next() : serveStatic({ path: "./dist/index.html" })(c, next)));
+app.get("*", (c, next) => (c.req.path === "/api" || c.req.path.startsWith("/api/") ? next() : serveStatic({ path: "./dist/index.html" })(c, next)));
 
 serve({ fetch: app.fetch, port: config.port }, (info) => console.log(`assist läuft auf Port ${info.port}`));

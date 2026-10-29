@@ -33,6 +33,12 @@ describe("buildSessionConfig", () => {
     expect(names.sort()).toEqual(["confirm_action", "ha_call_service", "ha_get_state", "ha_search"]);
   });
 
+  it("setzt strict: false auf allen HA-Function-Tools", () => {
+    const fns = s.delegation.responses.tools.filter((t: any) => t.type === "function");
+    expect(fns).toHaveLength(4);
+    for (const t of fns) expect(t.strict).toBe(false);
+  });
+
   it("enthaelt keine Geheimnisse", () => {
     const json = JSON.stringify(s);
     for (const secret of ["sk-SECRETKEY", "HATOKEN123", "geheim", "s3cret"]) expect(json).not.toContain(secret);
