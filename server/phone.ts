@@ -27,7 +27,8 @@ export function callRoutes(config: Config): Hono {
       signal: AbortSignal.timeout(10_000),
     }).catch(() => null);
     if (!res?.ok) {
-      console.error("twilio call failed", res?.status ?? "network");
+      // Twilio-Fehlerbody (code/message) enthaelt keine Zugangsdaten
+      console.error("twilio call failed", res?.status ?? "network", await res?.text().catch(() => ""));
       return c.json({ error: "call_failed" }, 502);
     }
     return c.body(null, 204);
