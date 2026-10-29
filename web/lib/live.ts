@@ -28,7 +28,7 @@ const errMsg = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 export async function connectLive(ev: LiveEvents): Promise<{ close(): void; micStream: MediaStream; remoteStream: MediaStream }> {
   ev.onState("connecting");
-  const micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  let micStream: MediaStream | undefined;
   const remoteStream = new MediaStream();
   const pc = new RTCPeerConnection();
   const audio = document.createElement("audio");
@@ -41,20 +41,30 @@ export async function connectLive(ev: LiveEvents): Promise<{ close(): void; micS
     if (closed) return;
     closed = true;
     pc.close();
-    micStream.getTracks().forEach((t) => t.stop());
+    micStream?.getTracks().forEach((t) => t.stop());
     audio.remove();
+    ev.onWorking(false);
     ev.onState("closed");
   };
 
   try {
-    for (const track of micStream.getTracks()) pc.addTrack(track, micStream);
+    // Echo-Unterdrueckung: das eigene "Ja oder Nein?" des Assistenten darf nicht als Nutzereingabe zurueckkommen
+    const mic = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+    });
+    micStream = mic;
+    for (const track of mic.getTracks()) pc.addTrack(track, mic);
     pc.ontrack = (e) => e.streams[0]?.getTracks().forEach((t) => remoteStream.addTrack(t));
     pc.onconnectionstatechange = () => {
       if (pc.connectionState === "failed") ev.onError("Verbindung verloren");
       if (pc.connectionState === "failed" || pc.connectionState === "closed") teardown();
     };
     const dc = pc.createDataChannel(DATA_CHANNEL);
-    const send = (msg: object) => dc.readyState === "open" && dc.send(JSON.stringify(msg));
+    const send = (msg: object) => {
+      if (dc.readyState !== "open") return false;
+      dc.send(JSON.stringify(msg));
+      return true;
+    };
 
     // Nur finale Nutzeraeusserungen gehen an den Server (Grundlage der Bestaetigungspruefung).
     let posting: Promise<unknown> = Promise.resolve();
@@ -80,6 +90,7 @@ export async function connectLive(ev: LiveEvents): Promise<{ close(): void; micS
       } catch {
         return;
       }
+      if (!event || typeof event !== "object") return;
       user.handle(event);
       assistant.handle(event);
       delegation(event).catch((e) => ev.onError(errMsg(e)));
@@ -101,7 +112,7 @@ export async function connectLive(ev: LiveEvents): Promise<{ close(): void; micS
     await pc.setRemoteDescription({ type: "answer", sdp: answer.sdp });
 
     return {
-      micStream,
+      micStream: mic,
       remoteStream,
       close() {
         if (closed) return;
@@ -111,6 +122,7 @@ export async function connectLive(ev: LiveEvents): Promise<{ close(): void; micS
       },
     };
   } catch (e) {
+    ev.onError(e instanceof DOMException && e.name === "NotAllowedError" ? "Kein Mikrofonzugriff – bitte im Browser erlauben" : "Verbindung fehlgeschlagen");
     teardown();
     throw e;
   }

@@ -8,6 +8,7 @@ const call = (path: string, method: string, body?: unknown) =>
   fetch(path, {
     method,
     credentials: "same-origin",
+    signal: AbortSignal.timeout(15_000), // ein haengender POST darf keine Tool-Aufrufe blockieren
     ...(body === undefined ? {} : { headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }),
   });
 

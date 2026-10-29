@@ -14,7 +14,7 @@ export const SESSION_CLOSED = "session.closed";
 const TOOLS = new Set(["ha_search", "ha_get_state", "ha_call_service", "confirm_action"]);
 
 export function createDelegationHandler(
-  send: (msg: object) => void,
+  send: (msg: object) => unknown,
   callTool: (name: string, args: unknown) => Promise<unknown>,
   onWorking: (active: boolean) => void,
 ): (event: any) => Promise<void> {
@@ -59,13 +59,13 @@ export function createDelegationHandler(
     const item = inner?.item;
     if (inner?.type !== OUTPUT_ITEM_DONE || item?.type !== "function_call") return;
     open++;
+    const result = await run(item); // run wirft nie
+    open--;
     try {
-      const result = await run(item);
-      send({ type: "response.item.create", item: { type: "function_call_output", call_id: item.call_id, output: JSON.stringify(result) } });
-      send({ type: "response.create" });
-      resumes++;
+      send({ type: "response.item.create", item: { type: "function_call_output", call_id: item.call_id, output: JSON.stringify(result ?? null) } });
+      // Bei parallelen Aufrufen erst fortsetzen, wenn alle Ergebnisse zurueck sind; false = nicht gesendet
+      if (open === 0 && send({ type: "response.create" }) !== false) resumes++;
     } finally {
-      open--;
       settle();
     }
   };
