@@ -8,20 +8,29 @@ import { acquire, release } from "@/lib/wakeLock";
 
 type Live = Awaited<ReturnType<typeof connectLive>>;
 const STATUS = { idle: "Bereit", connecting: "Verbinde …", connected: "Hört zu" };
+const IDLE_MS = 5 * 60 * 1000;
 
 export function VoiceScreen({ onUnauthorized }: { onUnauthorized: () => void }) {
   const live = useRef<Live | null>(null);
   const [status, setStatus] = useState<keyof typeof STATUS>("idle");
-  const [streams, setStreams] = useState<{ mic?: MediaStream; remote?: MediaStream }>({});
+  const [streams, setStreams] = useState<{ mic?: MediaStream; remote?: MediaStream; audio?: AudioContext }>({});
+  const audioCtx = useRef<AudioContext | null>(null);
+  const idle = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [working, setWorking] = useState(false);
   const [user, setUser] = useState("");
   const [assistant, setAssistant] = useState("");
   const [error, setError] = useState("");
 
   const session = useRef(0);
+  const cleanup = () => {
+    clearTimeout(idle.current);
+    void audioCtx.current?.close();
+    audioCtx.current = null;
+  };
   const reset = () => {
     session.current++;
     live.current = null;
+    cleanup();
     release();
     setStreams({});
     setWorking(false);
@@ -33,17 +42,32 @@ export function VoiceScreen({ onUnauthorized }: { onUnauthorized: () => void }) 
       live.current.close(); // kein Auto-Reconnect: danach bleibt es bei „Bereit“
       return reset();
     }
+    // iOS: AudioContext nur innerhalb der Klick-Geste anlegen, also vor dem ersten await
+    cleanup();
+    const audio = new AudioContext();
+    audioCtx.current = audio;
+    void audio.resume();
     setError("");
     setUser("");
     setAssistant("");
     // Events eines alten Gesprächs (z. B. dessen verzögertes „closed“) dürfen das neue nicht beenden.
     const id = ++session.current;
     const mine = () => id === session.current;
+    const armIdle = () => {
+      clearTimeout(idle.current);
+      idle.current = setTimeout(() => {
+        if (!mine()) return;
+        setError("Gespräch wegen Inaktivität beendet");
+        live.current?.close();
+        reset();
+      }, IDLE_MS);
+    };
     try {
       const l = await connectLive({
         onState: (s) => mine() && (s === "closed" ? reset() : setStatus(s)),
         onUserText: (t) => {
           if (!mine()) return;
+          armIdle();
           setUser(t);
           setAssistant("");
         },
@@ -53,7 +77,8 @@ export function VoiceScreen({ onUnauthorized }: { onUnauthorized: () => void }) 
       });
       if (!mine()) return l.close(); // während des Verbindens verworfen (Unmount)
       live.current = l;
-      setStreams({ mic: l.micStream, remote: l.remoteStream });
+      setStreams({ mic: l.micStream, remote: l.remoteStream, audio });
+      armIdle();
       void acquire();
     } catch (e) {
       // den Fehlertext hat connectLive schon über onError gemeldet
@@ -65,6 +90,7 @@ export function VoiceScreen({ onUnauthorized }: { onUnauthorized: () => void }) 
     () => () => {
       session.current++;
       live.current?.close();
+      cleanup();
       release();
     },
     [],
@@ -77,7 +103,7 @@ export function VoiceScreen({ onUnauthorized }: { onUnauthorized: () => void }) 
         Assist · <span className={active ? "text-[#9fd8ff]" : undefined}>{STATUS[status]}</span>
       </p>
       <div className="mt-[14vh]">
-        <Waveform mode={working ? "working" : active ? "user" : "idle"} micStream={streams.mic} remoteStream={streams.remote} />
+        <Waveform mode={working ? "working" : active ? "user" : "idle"} micStream={streams.mic} remoteStream={streams.remote} audio={streams.audio} />
       </div>
       <div className="mt-6 min-h-0 flex-1 overflow-hidden">
         <Subtitles user={user} assistant={assistant} />

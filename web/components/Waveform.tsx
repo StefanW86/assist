@@ -9,11 +9,13 @@ const LINES = [
   { width: 1.2, alpha: 0.6, k1: 1.6, k2: 4.4, s1: -1.1, s2: 1.7 },
 ];
 
-function analyser(ctx: AudioContext, stream?: MediaStream) {
+function analyser(ctx: AudioContext, stream: MediaStream | undefined, sources: AudioNode[]) {
   if (!stream?.getAudioTracks().length) return null;
   const an = ctx.createAnalyser();
   an.fftSize = 1024;
-  ctx.createMediaStreamSource(stream).connect(an); // nicht an destination: die Wiedergabe macht das <audio> aus live.ts
+  const src = ctx.createMediaStreamSource(stream);
+  src.connect(an); // nicht an destination: die Wiedergabe macht das <audio> aus live.ts
+  sources.push(src);
   return an;
 }
 
@@ -25,7 +27,18 @@ function level(an: AnalyserNode | null, buf: Float32Array<ArrayBuffer>) {
   return Math.sqrt(sum / buf.length);
 }
 
-export function Waveform({ mode, micStream, remoteStream }: { mode: WaveMode; micStream?: MediaStream; remoteStream?: MediaStream }) {
+// Den AudioContext legt VoiceScreen in der Klick-Geste an und schliesst ihn auch (iOS).
+export function Waveform({
+  mode,
+  micStream,
+  remoteStream,
+  audio,
+}: {
+  mode: WaveMode;
+  micStream?: MediaStream;
+  remoteStream?: MediaStream;
+  audio?: AudioContext;
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const modeRef = useRef(mode);
   modeRef.current = mode;
@@ -34,11 +47,9 @@ export function Waveform({ mode, micStream, remoteStream }: { mode: WaveMode; mi
     const canvas = canvasRef.current!;
     const g = canvas.getContext("2d")!;
     const slow = matchMedia("(prefers-reduced-motion: reduce)").matches ? 0.35 : 1;
-    const audio = micStream || remoteStream ? new AudioContext() : null;
-    // shortcut: iOS kann einen AudioContext ausserhalb der Klick-Geste pausiert lassen (Welle bleibt dann ruhig); falls ja, Context im Klick anlegen.
-    void audio?.resume();
-    const mic = audio && analyser(audio, micStream);
-    const remote = audio && analyser(audio, remoteStream);
+    const sources: AudioNode[] = [];
+    const mic = audio ? analyser(audio, micStream, sources) : null;
+    let remote: AnalyserNode | null = null;
     const buf = new Float32Array(1024);
     let amp = 0;
     let raf = 0;
@@ -55,6 +66,8 @@ export function Waveform({ mode, micStream, remoteStream }: { mode: WaveMode; mi
       g.setTransform(dpr, 0, 0, dpr, 0, 0);
       g.clearRect(0, 0, w, h);
 
+      // Die Remote-Spur kommt oft erst nach dem Verbinden: Analyser nachziehen, sobald sie da ist.
+      if (!remote && audio) remote = analyser(audio, remoteStream, sources);
       const t = (now / 1000) * slow;
       const micLevel = level(mic, buf);
       const remoteLevel = level(remote, buf);
@@ -96,9 +109,9 @@ export function Waveform({ mode, micStream, remoteStream }: { mode: WaveMode; mi
 
     return () => {
       cancelAnimationFrame(raf);
-      void audio?.close();
+      sources.forEach((s) => s.disconnect());
     };
-  }, [micStream, remoteStream]);
+  }, [audio, micStream, remoteStream]);
 
   return <canvas ref={canvasRef} aria-hidden className="block h-40 w-full" />;
 }
