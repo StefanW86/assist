@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-md: 0.5rem;
+}
+
+/* Dark only: Tokens direkt auf :root */
+:root {
+  --background: #02060f;
+  --foreground: #cfe3ff;
+  --primary: #2a7bff;
+  --primary-foreground: #ffffff;
+  --secondary: rgba(10, 30, 70, 0.55);
+  --secondary-foreground: #cfe3ff;
+  --muted: rgba(10, 30, 70, 0.55);
+  --muted-foreground: #7fb6ff;
+  --accent: #5fb0ff;
+  --accent-foreground: #02060f;
+  --destructive: #ff6b7a;
+  --border: rgba(95, 176, 255, 0.25);
+  --input: rgba(95, 176, 255, 0.35);
+  --ring: #5fb0ff;
+  color-scheme: dark;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    @apply text-foreground;
+    margin: 0;
+    font-family: system-ui, sans-serif;
+    background: radial-gradient(ellipse at 50% 30%, #0b2a5c 0%, #050d1f 65%, #02060f 100%) fixed;
+  }
+  /* feines Gitter über dem Verlauf */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(rgba(80, 160, 255, 0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(80, 160, 255, 0.07) 1px, transparent 1px);
+    background-size: 24px 24px;
+  }
+}
