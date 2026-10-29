@@ -3,9 +3,7 @@ services:
     build: .
     init: true
     env_file: .env
-    # Only localhost: from outside the app is reachable solely via the tunnel (login trusts CF-Connecting-IP).
-    ports:
-      - "127.0.0.1:8080:8080"
+    # No published ports: reachable only via the tunnel (login trusts CF-Connecting-IP).
     restart: unless-stopped
 
   cloudflared:

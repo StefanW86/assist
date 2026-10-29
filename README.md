@@ -38,8 +38,8 @@ Immer mit Bestätigung (Ablauf nach 60 s): Schlösser (`lock`), Alarmanlage (`al
 ```
 cp .env.example .env   # ausfüllen
 docker compose up --build -d
-curl -i localhost:8080/                       # 200, HTML
-curl -i -X POST localhost:8080/api/session    # 401
+docker compose exec assist node -e "fetch('http://localhost:8080/').then(r=>console.log(r.status))"                     # 200
+docker compose exec assist node -e "fetch('http://localhost:8080/api/session',{method:'POST'}).then(r=>console.log(r.status))"   # 401
 docker compose exec assist id -u              # ungleich 0
 docker image inspect $(docker compose images -q assist)   # keine Secrets in Env
 ```
@@ -48,7 +48,7 @@ docker image inspect $(docker compose images -q assist)   # keine Secrets in Env
 
 ### Automatisches Deployment
 
-`.github/workflows/deploy.yml` läuft bei jedem Push auf `main` (oder manuell) auf einem self-hosted Runner mit Label `assist` auf dem Server: `git reset --hard` auf den gepushten Commit in `/home/stefan/assist`, `docker compose up --build -d`, Healthcheck auf Port 8080, alte Images aufräumen. Die `.env` bleibt dabei unangetastet.
+`.github/workflows/deploy.yml` läuft bei jedem Push auf `main` (oder manuell) auf einem self-hosted Runner mit Label `assist` auf dem Server: `git reset --hard` auf den gepushten Commit in `/home/stefan/assist`, `docker compose up --build -d`, Healthcheck im Container auf Port 8080, alte Images aufräumen. Die `.env` bleibt dabei unangetastet.
 
 Das Repo ist öffentlich und der Runner läuft im Heimnetz: Unter *Settings → Actions → General* „Require approval for all external contributors“ einstellen, damit Workflows aus Fork-PRs nie ungefragt auf dem Server laufen.
 
@@ -60,7 +60,7 @@ Das Repo ist öffentlich und der Runner läuft im Heimnetz: Unter *Settings → 
 2. Im Tunnel einen *Public Hostname* anlegen, z. B. `assist.example.com`, Service `HTTP` → `assist:8080` (Name des Compose-Services, nicht `localhost`).
 3. `docker compose up -d` – im Dashboard muss der Tunnel auf *Healthy* stehen.
 
-**Sicherheit:** Port 8080 ist nur an `127.0.0.1` gebunden, also weder im LAN noch per Portweiterleitung erreichbar. Das ist Absicht: Der Login-Schutz (5 Fehlversuche → 15 Min Sperre) vertraut dem Header `CF-Connecting-IP`; direkt erreichbar könnte er gefälscht werden. Zum Testen auf dem Server selbst: `curl localhost:8080/`.
+**Sicherheit:** Der App-Container veröffentlicht keinen Port; erreichbar ist er nur über `cloudflared` im Compose-Netz. Das ist Absicht: Der Login-Schutz (5 Fehlversuche → 15 Min Sperre) vertraut dem Header `CF-Connecting-IP`; direkt erreichbar könnte er gefälscht werden. Prüfen auf dem Server geht nur aus dem Container heraus (siehe Docker-Befehle oben).
 
 ## Test am Handy
 
