@@ -54,9 +54,13 @@ Das Repo ist öffentlich und der Runner läuft im Heimnetz: Unter *Settings → 
 
 ## Cloudflare Tunnel
 
-Tunnel auf `http://<host>:8080` zeigen lassen.
+`docker compose` startet `cloudflared` gleich mit.
 
-**Sicherheit:** Port 8080 darf nur über den Tunnel bzw. im LAN erreichbar sein, niemals per Portweiterleitung ins Internet. Der Login-Schutz (5 Fehlversuche → 15 Min Sperre) vertraut dem Header `CF-Connecting-IP`; direkt erreichbar könnte er gefälscht werden.
+1. Im Cloudflare-Dashboard unter *Zero Trust → Networks → Tunnels* einen Tunnel anlegen (Connector: Docker) und den Wert nach `--token` als `CLOUDFLARE_TUNNEL_TOKEN` in die `.env` eintragen.
+2. Im Tunnel einen *Public Hostname* anlegen, z. B. `assist.example.com`, Service `HTTP` → `assist:8080` (Name des Compose-Services, nicht `localhost`).
+3. `docker compose up -d` – im Dashboard muss der Tunnel auf *Healthy* stehen.
+
+**Sicherheit:** Port 8080 ist nur an `127.0.0.1` gebunden, also weder im LAN noch per Portweiterleitung erreichbar. Das ist Absicht: Der Login-Schutz (5 Fehlversuche → 15 Min Sperre) vertraut dem Header `CF-Connecting-IP`; direkt erreichbar könnte er gefälscht werden. Zum Testen auf dem Server selbst: `curl localhost:8080/`.
 
 ## Test am Handy
 

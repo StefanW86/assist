@@ -3,6 +3,16 @@ services:
     build: .
     init: true
     env_file: .env
+    # Only localhost: from outside the app is reachable solely via the tunnel (login trusts CF-Connecting-IP).
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
+    restart: unless-stopped
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?CLOUDFLARE_TUNNEL_TOKEN fehlt in .env}
+    depends_on:
+      - assist
     restart: unless-stopped
