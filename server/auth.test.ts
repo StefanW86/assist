@@ -15,7 +15,7 @@ const config: Config = {
   port: 8080,
 };
 
-const mk = (now = () => 0) => createApp({ config, live: undefined, ha: { callTool: async () => null }, now });
+const mk = (now = () => 0) => createApp({ config, live: undefined as never, ha: { callTool: async () => null }, now });
 const login = (app: ReturnType<typeof mk>, password: string, ip = "1.2.3.4") =>
   app.request("/api/login", {
     method: "POST",

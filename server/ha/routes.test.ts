@@ -42,7 +42,7 @@ function fakeHa(opts: { throws?: boolean } = {}) {
 async function setup(cfg: Partial<Config> = {}, opts: { throws?: boolean } = {}) {
   const f = fakeHa(opts);
   let t = 0;
-  const app = createApp({ config: { ...base, ...cfg }, live: undefined, ha: f.ha, now: () => t });
+  const app = createApp({ config: { ...base, ...cfg }, live: undefined as never, ha: f.ha, now: () => t });
   const res = await app.request("/api/login", {
     method: "POST",
     headers: { "content-type": "application/json" },
