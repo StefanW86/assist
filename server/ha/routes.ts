@@ -43,9 +43,14 @@ export function haRoutes(ha: HaClient, config: Config, store: ConfirmationStore)
 
   const tools: Record<string, (args: Args) => Promise<unknown>> = {
     async ha_search(args) {
+      const domain = args.domain == null ? undefined : str(args.domain, "domain");
+      // nur mit domain darf query fehlen: dann listet ha-mcp alle Entitaeten der Domain
+      const query = domain && args.query == null ? undefined : str(args.query, "query");
       const res = (await ha.callTool("ha_search", {
-        query: str(args.query, "query"),
-        limit: 20,
+        ...(query ? { query } : {}),
+        // domain_filter laesst ha-mcp zusaetzlich die Konfigurationssuche ueberspringen
+        ...(domain ? { domain_filter: domain } : {}),
+        limit: 50,
         result_fields: ["entity_id", "friendly_name", "domain", "state", "area"],
         fields: ["entities"],
         // ha-mcp durchsucht sonst auch alle Automations-/Skript-Konfigurationen (seriell, >15 s); wir brauchen nur Entitaeten

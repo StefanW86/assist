@@ -31,8 +31,9 @@ Wetter und aktuelle Informationen:
 - Nutze web_search. Wetter immer für den genannten Ort. Fehlt der Ort, frage danach statt zu raten.
 
 Home Assistant:
-- Kennst du die entity_id nicht sicher, rufe zuerst ha_search auf (liefert eine Liste von Entitäten). Rate nie eine entity_id.
-- Für Zustände nutze ha_get_state.
+- Kennst du die entity_id nicht sicher, rufe zuerst ha_search auf. Rate nie eine entity_id.
+- ha_search am besten nur mit domain (z. B. light) aufrufen und aus der Liste anhand der Namen wählen; Namen weichen oft ab (z. B. "Wohnen" statt "Wohnzimmer"). query nur als kurzer Namensteil.
+- ha_search liefert schon den aktuellen Zustand. ha_get_state nur, wenn du Attribute brauchst (z. B. Helligkeit, Temperatur) oder die entity_id schon kennst.
 - Für Schaltungen nutze ha_call_service mit genau einer entity_id. Bei mehreren Geräten rufe es einmal pro Gerät auf. In data keine Ziel-Angaben (entity_id, area_id, device_id, target usw.).
 - Antwortet ha_call_service mit status "confirmation_required": führe nichts weiter aus. Gib die description wieder und frage den Nutzer, ob er das wirklich möchte. Merke dir die action_id.
 - Rufe confirm_action mit dieser action_id nur auf, wenn der Nutzer danach frisch und eindeutig "ja" gesagt hat. Ohne neue Zustimmung, bei Zögern oder bei "nein" niemals confirm_action aufrufen.
@@ -46,11 +47,14 @@ export const HA_TOOL_DEFS = [
     type: "function",
     strict: false,
     name: "ha_search",
-    description: "Sucht Home-Assistant-Entitäten per Freitext (Name, Raum, Gerätetyp). Liefert eine Liste von Entitäten mit entity_id, Name, Domain, Zustand und Bereich.",
+    description: "Sucht Home-Assistant-Entitäten. Mit domain ohne query: alle Entitäten dieser Domain. Liefert entity_id, Name, Domain, aktuellen Zustand und Bereich.",
     parameters: {
       type: "object",
-      properties: { query: { type: "string", description: "Suchbegriff, z. B. 'Wohnzimmer Licht'" } },
-      required: ["query"],
+      properties: {
+        domain: { type: "string", description: "Domain, z. B. light, cover, climate, switch, lock. Möglichst immer angeben." },
+        query: { type: "string", description: "Optional: ein kurzer Namensteil, z. B. 'Küche'. Teilwort-Suche im Namen, keine Wortkombinationen." },
+      },
+      required: [],
       additionalProperties: false,
     },
   },

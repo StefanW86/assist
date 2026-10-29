@@ -139,11 +139,24 @@ describe("HA tool endpoints", () => {
     expect(await s.tool("ha_search", { query: "licht" })).toEqual([{ entity_id: "light.wohnzimmer" }]);
     expect(s.calls.find((c) => c.name === "ha_search")!.args).toEqual({
       query: "licht",
-      limit: 20,
+      limit: 50,
       result_fields: ["entity_id", "friendly_name", "domain", "state", "area"],
       fields: ["entities"],
       config_time_budget: 0.001,
     });
+  });
+
+  it("ha_search mit domain: query optional, sonst Pflicht", async () => {
+    const s = await setup();
+    await s.tool("ha_search", { domain: "light" });
+    await s.tool("ha_search", { domain: "light", query: "Küche" });
+    expect(s.calls.map((c) => [c.args.domain_filter, c.args.query])).toEqual([
+      ["light", undefined],
+      ["light", "Küche"],
+    ]);
+    expect(await s.tool("ha_search", {})).toEqual({ error: "invalid_query" });
+    expect(await s.tool("ha_search", { domain: 5 })).toEqual({ error: "invalid_domain" });
+    expect(s.calls.length).toBe(2);
   });
 
   it("ha_search ohne Allowlist liefert alle Entitaeten, ha_get_state entpackt .data", async () => {
