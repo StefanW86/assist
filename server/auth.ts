@@ -34,14 +34,15 @@ export function authRoutes(config: Config, now: () => number): Hono {
 
   app.post("/login", async (c) => {
     const ip = clientIp(c);
+    const body = await c.req.json().catch(() => null);
+    const pw = typeof body?.password === "string" ? body.password : "";
+    // kein await ab hier: get/Sperre/Vergleich/Zaehler muessen atomar sein (parallele Requests)
     const rec = attempts.get(ip) ?? { fails: 0, lockedUntil: 0 };
     if (rec.lockedUntil > now()) return c.body(null, 429);
     if (rec.lockedUntil) {
       rec.fails = 0;
       rec.lockedUntil = 0;
     }
-    const body = await c.req.json().catch(() => null);
-    const pw = typeof body?.password === "string" ? body.password : "";
     if (!timingSafeEqual(sha(pw), sha(config.appPassword))) {
       rec.fails++;
       if (rec.fails >= MAX_FAILS) rec.lockedUntil = now() + LOCK_MS;

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { Hono } from "hono";
 import { createApp } from "./app.ts";
+import { requireAuth } from "./auth.ts";
 import type { Config } from "./config.ts";
 
 const config: Config = {
@@ -50,5 +52,30 @@ describe("auth", () => {
     expect((await login(app, "geheim", "9.9.9.9")).status).toBe(204);
     t += 15 * 60 * 1000;
     expect((await login(app, "geheim")).status).toBe(204);
+  });
+  it("Lockout haelt bei parallelen Fehlversuchen", async () => {
+    const app = mk();
+    await Promise.all(Array.from({ length: 10 }, () => login(app, "falsch")));
+    expect((await login(app, "geheim")).status).toBe(429);
+  });
+
+  it("Session laeuft nach 30 Tagen ab", async () => {
+    let t = 0;
+    const app = mk(() => t);
+    const cookie = (await login(app, "geheim")).headers.get("set-cookie")!.split(";")[0];
+    t = 30 * 24 * 3600 * 1000 - 1;
+    expect((await app.request("/api/me", { headers: { cookie } })).status).toBe(204);
+    t += 2;
+    expect((await app.request("/api/me", { headers: { cookie } })).status).toBe(401);
+  });
+
+  it("requireAuth schuetzt Routen", async () => {
+    const app = mk();
+    const prot = new Hono();
+    prot.use("*", requireAuth(config, () => 0));
+    prot.get("/x", (c) => c.text("ok"));
+    expect((await prot.request("/x")).status).toBe(401);
+    const cookie = (await login(app, "geheim")).headers.get("set-cookie")!.split(";")[0];
+    expect((await prot.request("/x", { headers: { cookie } })).status).toBe(200);
   });
 });
